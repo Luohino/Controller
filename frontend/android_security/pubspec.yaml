@@ -1,0 +1,66 @@
+name: android_security
+description: "A new Flutter project."
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  permission_handler: ^11.3.1
+  flutter_sound: ^9.2.13
+  audio_session: ^0.1.25
+  web_socket_channel: ^3.0.3
+  path_provider: ^2.1.5
+  flutter_webrtc: ^0.12.1
+  flutter_contacts: ^1.1.9+2
+  call_log: ^6.0.1
+  battery_plus: ^6.1.1
+  connectivity_plus: ^6.0.4
+  device_info_plus: ^11.0.0
+  usage_stats: ^1.1.0
+  network_info_plus: ^6.0.3
+  shared_preferences: ^2.5.5
+  geolocator: ^13.0.2
+  camera: ^0.12.0+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.4
+
+flutter_launcher_icons:
+  android: "ic_app_logo"
+  image_path: "assets/logo.png"
+  image_path_android: "assets/logo.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/logo.png"
+
+flutter_native_splash:
+  color: "#000000"
+  image: "assets/logo.png"
+  android: true
+  fullscreen: true
+
+  android_12:
+    color: "#000000"
+    image: "assets/logo.png"
+
+flutter:
+
+
+  uses-material-design: true
+
+  assets:
+    - assets/logo.png
+
+ 

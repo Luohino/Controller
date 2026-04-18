@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Web Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; background: #111; font-family: 'Consolas', sans-serif;}
+        #map { height: 100vh; width: 100vw; }
+        .arrow-icon { margin: 0; padding: 0; text-align: center;}
+        #hud { position: absolute; top: 15px; left: 50px; z-index: 9999; background: rgba(0,0,0,0.8); color: #0f0; padding: 15px; border-radius: 8px; border: 1px inset #444; width: 300px; }
+        .status { color: #aaa; margin-top: 10px; font-size: 14px;}
+        h2 { margin: 0; color: #fff; font-size: 20px;}
+        .alert { color: #ef4444; font-weight: bold; margin-top: 10px;}
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <h2>🛰️ LIVE TELEMETRY</h2>
+        <div id="stats" class="status">Connecting to satellite...</div>
+    </div>
+    <div id="map"></div>
+    <script>
+        // Extract websocket url from url parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        let wsUrl = urlParams.get('ws') || 'wss://YOUR_RENDER_APP_NAME.onrender.com/ws';
+        
+        let wsDomain = wsUrl.replace("wss://", "").replace("ws://", "");
+        let httpDomain = "https://" + wsDomain;
+
+        const map = L.map('map', {zoomControl: false}).setView([0, 0], 2);
+        
+        // Use Google Satellite (Premium detail, works perfectly for tracking)
+        L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            attribution: '© Google Satellite'
+        }).addTo(map);
+
+        let marker = null;
+        let isFollowing = true;
+
+        // Auto-disable auto-following if the user pans the map manually
+        map.on('dragstart', () => { isFollowing = false; });
+
+        function updateMarker(lat, lng, heading, acc) {
+            if (!marker) {
+                // Initial generation of compass pin
+                const arrowHtml = `<div style="transform: rotate(${heading}deg); transition: transform 0.1s linear; filter: drop-shadow(0px 0px 4px #000);">
+                    <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="30" cy="30" r="25" fill="rgba(220, 38, 38, 0.3)" stroke="#fff" stroke-width="2"/>
+                        <polygon points="30,0 15,35 45,35" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+                    </svg>
+                </div>`;
+                const icon = L.divIcon({ html: arrowHtml, className: 'arrow-icon', iconSize: [60, 60], iconAnchor: [30, 30] });
+                marker = L.marker([lat, lng], {icon: icon}).addTo(map);
+                map.setView([lat, lng], 18);
+            } else {
+                marker.setLatLng([lat, lng]);
+                // Smooth CSS rotation
+                const baseElement = marker.getElement();
+                if(baseElement) {
+                    const rotElement = baseElement.firstElementChild;
+                    if (rotElement) {
+                        rotElement.style.transform = `rotate(${heading}deg)`;
+                    }
+                }
+                
+                if (isFollowing) {
+                     map.panTo([lat, lng], {animate: true, duration: 0.2});
+                }
+            }
+            document.getElementById('stats').innerHTML = `Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}<br>Accuracy: ±${acc.toFixed(1)}m<br>Heading: ${heading.toFixed(1)}°`;
+        }
+
+        function connect() {
+            document.getElementById('stats').innerText = "Connecting...";
+            const ws = new WebSocket(wsUrl);
+            
+            // Timeout: if no open in 10s, reconnect
+            const timeout = setTimeout(() => {
+                try { ws.close(); } catch(e) {}
+                document.getElementById('stats').innerHTML = "<span style='color:#fbbf24'>Connection slow, retrying...</span>";
+                setTimeout(connect, 2000);
+            }, 10000);
+            
+            ws.onopen = () => {
+                clearTimeout(timeout);
+                document.getElementById('stats').innerHTML = "<span style='color:#22c55e'>Connected! Waiting for target signal...</span>";
+                ws.send(JSON.stringify({ type: 'register', role: 'controller' }));
+            };
+            ws.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'location_update') {
+                        updateMarker(data.lat, data.lng, data.heading || 0, data.accuracy || 0);
+                    }
+                } catch(err) {}
+            };
+            ws.onclose = (e) => {
+                clearTimeout(timeout);
+                document.getElementById('stats').innerHTML = `<div class="alert">
+                Connection blocked or lost! <br><br>
+                If this is your first time opening this browser, Microsoft Dev Tunnels blocks socket connections for security.<br><br>
+                <b>You MUST click the link below to accept the warning once, then refresh this page:</b><br><br>
+                <a href="${httpDomain}" target="_blank" style="color: #60a5fa;">Authenticate Dev Tunnels</a>
+                </div>`;
+                setTimeout(connect, 3000);
+            };
+            ws.onerror = () => {
+                clearTimeout(timeout);
+            };
+        }
+        connect();
+    </script>
+</body>
+</html>

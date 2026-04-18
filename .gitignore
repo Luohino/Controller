@@ -1,0 +1,20 @@
+frontend/android_security/build/
+frontend/android_security/.dart_tool/
+frontend/android_security/.flutter-plugins
+frontend/android_security/.flutter-plugins-dependencies
+
+# Python cache
+Monitoring/__pycache__/
+Monitoring/*.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Downloads
+Monitoring/downloads/
